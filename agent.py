@@ -1,73 +1,51 @@
-"""
-Business logic for AI agent with knowledge base integration (LangChain + LangGraph).
-"""
-from dotenv import load_dotenv
-load_dotenv()
 import os
-
+from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_aws import AmazonKnowledgeBasesRetriever
-from langchain_core.tools import Tool
+from langchain_core.tools import tool
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+
+load_dotenv()
 
 SYSTEM_PROMPT = (
-    "You are a helpful AI assistant with access to a vector database of knowledge about companies and their financial data. "
-    "When users ask questions about companies or their financial data, use the available tool to retrieve accurate information. "
-    "Always provide clear and concise answers based on the retrieved information. "
-    "You must use English language for your responses and provide the answer in a concise manner. "
-    "Do not use any markdown formatting in your responses."
+    "You are a helpful AI assistant with access to a knowledge base of company documents. "
+    "Use the amazon_knowledge_base tool to retrieve accurate context to answer questions. "
+    "Always provide clear, concise answers without markdown formatting."
 )
 
-# --- LLM ---
-llm = ChatGroq(
-    model="openai/gpt-oss-20b",
-    api_key=os.getenv("GROQ_API_KEY"),
-)
+llm = ChatGroq(model="openai/gpt-oss-20b", api_key=os.getenv("GROQ_API_KEY"))
 
-# --- Retriever ---
 retriever = AmazonKnowledgeBasesRetriever(
     knowledge_base_id=os.getenv("BEDROCK_KNOWLEDGE_BASE_ID"),
-    retrieval_config={
-        "vectorSearchConfiguration": {"numberOfResults": 3}
-    },
+    retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
     region_name=os.getenv("AWS_REGION"),
 )
 
-# --- Tool ---
-def retrieve_from_kb(query: str) -> str:
+prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM_PROMPT),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+    MessagesPlaceholder("agent_scratchpad"),
+])
+
+
+@tool
+def amazon_knowledge_base(query: str) -> str:
+    """Retrieve relevant context from Amazon Bedrock Knowledge Base to answer user questions."""
     docs = retriever.invoke(query)
-    return "\n\n".join(doc.page_content for doc in docs)
-
-knowledge_base_tool = Tool(
-    name="amazon_knowledge_base",
-    func=retrieve_from_kb,
-    description=(
-        "A vector database of knowledge about companies and their financial data. "
-        "Use this to answer questions about companies or their financial data."
-    ),
-)
-
-# --- Agent ---
-# create_react_agent (LangGraph) is the LangChain 1.x replacement for
-# AgentExecutor + create_tool_calling_agent, which were removed in 1.0.
-agent_executor = create_react_agent(
-    llm,
-    tools=[knowledge_base_tool],
-    prompt=SYSTEM_PROMPT,
-)
+    return "\n\n".join(d.page_content for d in docs)
 
 
-async def get_agent_response(message, chat_history):
-    lc_history = []
-    for msg in chat_history:
-        if msg["role"] == "user":
-            lc_history.append(HumanMessage(content=msg["content"]))
-        elif msg["role"] == "assistant":
-            lc_history.append(AIMessage(content=msg["content"]))
+agent = create_tool_calling_agent(llm, tools=[amazon_knowledge_base], prompt=prompt)
+agent_executor = AgentExecutor(agent=agent, tools=[amazon_knowledge_base])
 
-    lc_history.append(HumanMessage(content=message))
 
-    response = await agent_executor.ainvoke({"messages": lc_history})
-    # Final AI message is always the last item in the messages list
-    return str(response["messages"][-1].content)
+async def get_agent_response(message: str, chat_history: list):
+    history = [
+        HumanMessage(content=m["content"]) if m["role"] == "user" else AIMessage(content=m["content"])
+        for m in chat_history
+    ]
+    response = await agent_executor.ainvoke({"input": message, "chat_history": history})
+    return str(response["output"])
