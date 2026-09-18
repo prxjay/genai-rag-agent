@@ -31,7 +31,7 @@ retriever = AmazonKnowledgeBasesRetriever(
     retrieval_config={
         "vectorSearchConfiguration": {"numberOfResults": 3}
     },
-    region_name=os.getenv("AWS_DEFAULT_REGION"),
+    region_name=os.getenv("AWS_REGION"),
 )
 
 # --- Tool ---

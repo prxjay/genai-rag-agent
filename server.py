@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-REGION    = os.getenv("AWS_DEFAULT_REGION")
+REGION    = os.getenv("AWS_REGION")
 S3_BUCKET = os.getenv("S3_BUCKET_NAME")
 KB_ID     = os.getenv("BEDROCK_KNOWLEDGE_BASE_ID")
 DS_ID     = os.getenv("BEDROCK_DATA_SOURCE_ID")
