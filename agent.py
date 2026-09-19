@@ -5,7 +5,8 @@ from langchain_aws import AmazonKnowledgeBasesRetriever
 from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain.agents import AgentExecutor
+from langchain_core.agents import create_tool_calling_agent
 
 load_dotenv()
 
