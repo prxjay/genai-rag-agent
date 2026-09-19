@@ -5,12 +5,17 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from agent import get_agent_response
-from mangum import Mangum
 
 load_dotenv()
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 REGION, S3_BUCKET = os.getenv("AWS_REGION"), os.getenv("S3_BUCKET_NAME")
 KB_ID, DS_ID      = os.getenv("BEDROCK_KNOWLEDGE_BASE_ID"), os.getenv("BEDROCK_DATA_SOURCE_ID")
@@ -61,6 +66,3 @@ async def clear_documents():
 async def sync_status(job_id: str):
     res = bedrock.get_ingestion_job(knowledgeBaseId=KB_ID, dataSourceId=DS_ID, ingestionJobId=job_id)
     return {"status": res["ingestionJob"]["status"]}
-
-
-handler = Mangum(app)
