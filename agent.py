@@ -3,10 +3,8 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_aws import AmazonKnowledgeBasesRetriever
 from langchain_core.tools import tool
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents import AgentExecutor
-from langchain_core.agents import create_tool_calling_agent
+from langgraph.prebuilt import create_react_agent
 
 load_dotenv()
 
@@ -24,13 +22,6 @@ retriever = AmazonKnowledgeBasesRetriever(
     region_name=os.getenv("AWS_REGION"),
 )
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", SYSTEM_PROMPT),
-    MessagesPlaceholder("chat_history"),
-    ("human", "{input}"),
-    MessagesPlaceholder("agent_scratchpad"),
-])
-
 
 @tool
 def amazon_knowledge_base(query: str) -> str:
@@ -39,8 +30,11 @@ def amazon_knowledge_base(query: str) -> str:
     return "\n\n".join(d.page_content for d in docs)
 
 
-agent = create_tool_calling_agent(llm, tools=[amazon_knowledge_base], prompt=prompt)
-agent_executor = AgentExecutor(agent=agent, tools=[amazon_knowledge_base])
+agent = create_react_agent(
+    model=llm,
+    tools=[amazon_knowledge_base],
+    prompt=SYSTEM_PROMPT,
+)
 
 
 async def get_agent_response(message: str, chat_history: list):
@@ -48,5 +42,6 @@ async def get_agent_response(message: str, chat_history: list):
         HumanMessage(content=m["content"]) if m["role"] == "user" else AIMessage(content=m["content"])
         for m in chat_history
     ]
-    response = await agent_executor.ainvoke({"input": message, "chat_history": history})
-    return str(response["output"])
+    messages = history + [HumanMessage(content=message)]
+    response = await agent.ainvoke({"messages": messages})
+    return str(response["messages"][-1].content)
