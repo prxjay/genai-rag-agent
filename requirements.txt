@@ -1,8 +1,8 @@
-boto3==1.43.94
-python-dotenv==1.1.1
-langchain==0.3.25
-langchain-groq==0.3.6
-langchain-aws==1.7.6
+boto3
+python-dotenv
+langchain
+langchain-groq
+langchain-aws
 fastapi
 uvicorn
 python-multipart
