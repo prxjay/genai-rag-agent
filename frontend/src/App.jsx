@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 const WELCOME = "Hi! I'm your RAG assistant powered by Amazon Bedrock. You can upload up to 5 documents using the 📎 icon below and ask questions across all of them.";
 const MAX_DOCS = 5;
 const MAX_MB   = 10;
-const API_URL  = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL  = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 
 const s = {
   page:      { height: "100vh", background: "#212121", display: "flex", flexDirection: "column", fontFamily: "'Outfit', system-ui, sans-serif", color: "#ececec" },
