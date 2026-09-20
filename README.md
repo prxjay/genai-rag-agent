@@ -1,10 +1,8 @@
 # GenAI RAG Agent — AWS Bedrock + LangChain + FastAPI
 
-An AI-powered chatbot that answers questions grounded in your own documents, using Retrieval-Augmented Generation (RAG) on AWS. Upload up to 5 documents, ask questions, and get answers sourced directly from that content — not from the model's general training data.
+An AI-powered chatbot that answers questions grounded in your own documents, using Retrieval-Augmented Generation (RAG) on AWS. Upload up to 5 documents, ask questions, and get answers sourced directly from that content and not from the model's general training data.
 
-[![Watch Demo Video](https://img.youtube.com/vi/zuvj-i0scgM/maxresdefault.jpg)](https://youtu.be/zuvj-i0scgM)
-
-[▶ Watch Demo Video on YouTube](https://youtu.be/zuvj-i0scgM)
+> 🚀 **Live Demo:** [**Watch Walkthrough Video on YouTube ▶**](https://youtu.be/zuvj-i0scgM)
 
 ---
 
@@ -16,14 +14,23 @@ An AI-powered chatbot that answers questions grounded in your own documents, usi
 
 ## How It Works
 
-**Document Upload & Indexing**
-When a user uploads a document, it's stored in Amazon S3 and automatically triggers an ingestion/sync job with an Amazon Bedrock Knowledge Base. Bedrock handles parsing the document, splitting it into chunks, and converting each chunk into vector embeddings using Amazon Titan Text Embeddings. These embeddings are stored in **Amazon S3 Vectors** — chosen specifically over OpenSearch Serverless because S3 Vectors is pay-per-use with no idle cost floor, making it far more cost-effective for a project at this scale.
+### 1. Document Ingestion & Indexing Pipeline
+1. **Upload:** User uploads documents (PDF, DOCX, TXT) via the UI → stored in **Amazon S3**.
+2. **Ingestion Trigger:** FastAPI calls Bedrock's `start_ingestion_job` API to initiate synchronization.
+3. **Parsing & Chunking:** Bedrock splits documents into semantic chunks.
+4. **Vector Embedding:** Chunks are embedded via **Amazon Titan Text Embeddings**.
+5. **Vector Storage:** Vectors are stored in **Amazon S3 Vectors** (pay-per-use, zero idle cost floor).
 
-**Answering Questions**
-When a user asks a question, the backend retrieves the most relevant chunks from the Knowledge Base and passes them, along with the question, to an LLM served through **Groq** for fast, low-latency inference. The agent is built with LangChain's `create_react_agent`, using a custom retrieval tool that lets the model decide when to pull in document context versus answering directly.
+### 2. Query & Retrieval Pipeline (ReAct Agent)
+1. **User Query:** User submits a prompt (with full multi-turn conversation history).
+2. **Reasoning Loop:** LangChain's `create_react_agent` evaluates the query and decides when retrieval is required.
+3. **Semantic Retrieval:** `AmazonKnowledgeBasesRetriever` fetches the most relevant chunks from the Knowledge Base.
+4. **Inference:** Chunks and prompt context are passed to **Groq** for sub-second LLM inference.
+5. **Delivery:** The grounded answer is returned directly to the chat interface.
 
-**Conversation Memory**
-Chat history is passed with every request, so the chatbot can correctly resolve follow-up questions (e.g., "what else did they do alongside that?") without the user repeating context.
+### 3. State & Conversation Memory
+- **Multi-Turn Context:** Full conversation history is sent with each turn so follow-up queries (*"Can you summarize that?"*) resolve naturally without repeating context.
+- **Full Lifecycle Sync:** Document uploads, deletions, and knowledge base sync states are tracked live in the UI.
 
 ---
 
