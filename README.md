@@ -2,7 +2,7 @@
 
 An AI-powered chatbot that answers questions grounded in your own documents, using Retrieval-Augmented Generation (RAG) on AWS. Upload up to 5 documents, ask questions, and get answers sourced directly from that content and not from the model's general training data.
 
-> 🚀 **Live Demo:** [**Watch Walkthrough Video on YouTube ▶**](https://youtu.be/zuvj-i0scgM)
+> 🚀 **Live Demo:** <a href="https://youtu.be/zuvj-i0scgM" target="_blank"><strong>Watch Walkthrough Video on YouTube ▶</strong></a>
 
 ---
 
